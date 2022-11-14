@@ -16,7 +16,7 @@ from azure.cli.core import get_default_cli
 from knack.log import CLI_LOGGER_NAME
 
 
-AzResult = namedtuple('AzResult', ['exit_code', 'result_dict', 'log'])
+AzResult = namedtuple('AzResult', ['exit_code', 'output', 'log'])
 
 # adjust the logging level if you want INFO or DEBUG log
 logging_level = logging.WARNING
@@ -25,13 +25,13 @@ SUCCESS_CODE = 0
 
 
 def main():
-    error_code, result_dict, log = az(sys.argv[1])
+    error_code, output, log = az(sys.argv[1])
 
     import pprint
     pp = pprint.PrettyPrinter(indent=2)
 
     if error_code == SUCCESS_CODE:
-        pp.pprint(result_dict)
+        pp.pprint(output)
     else:
         print(log)
 
@@ -102,7 +102,12 @@ def az(command):
 
 def _parseResult(buffer):
     """
-    Parse the string buffer content into a dict using json.loads
+    Return the string buffer content into a dict using json.loads whenever is possible
+    otherwise  the original string. This is useful when the output of the cli is specified,
+    allowed values: json, jsonc, yaml, yamlc, table, tsv, none
+    see https://learn.microsoft.com/en-us/cli/azure/format-output-azure-cli
+    example, listing the resource groups as a table:
+    az resource list --output table
 
     :param buffer: The StringIO buffer to retrieve value
 
@@ -111,10 +116,12 @@ def _parseResult(buffer):
     try:
         # Retrieve output buffer
         output = buffer.getvalue()
-
-        # Turn json string from output into dict
+        
         if output != "":
-            return json.loads(output)
+            try:
+                return json.loads(output)
+            except:
+                return output
         else:
             return json.loads("{}")
     except SystemExit as ex:

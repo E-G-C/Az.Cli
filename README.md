@@ -10,7 +10,7 @@
 The Python package is providing a way to interact with Azure using Python while sticking to a well-known concept of the Azure CLI.
 
 ```
-exit_code, result_dict, logs = az("group list")
+exit_code, output, logs = az("group list")
 ```
 
 If you are already familiar with the Azure CLI you should feel right at home using the `Az.Cli` Python packge API.
@@ -32,11 +32,13 @@ Under the hood the package uses the [~/.azure](https://github.com/Azure/azure-cl
 The `az` function returns a named tuple that allows you to retrieve the results easily.
 
 ```python
-AzResult = namedtuple('AzResult', ['exit_code', 'result_dict', 'log'])
+AzResult = namedtuple('AzResult', ['exit_code', 'output', 'log'])
 ```
 
 - The [`error_code`](https://docs.python.org/2/library/sys.html#sys.exit) where `0 == success`.
-- The `result_dict` containing a python dictionary on a successful return.
+- The `output` containing a python dictionary if the output from the 'az' command is expected as json format. Otherwise it will return the string returned by the command. This is useful when the output of the cli is specified, allowed values: json, jsonc, yaml, yamlc, table, tsv, none see https://learn.microsoft.com/en-us/cli/azure/format-output-azure-cli example, listing the resource groups as a table:
+    `az resource list --output table`
+
 - On failure (`error_code` > 0) a log message is available in the `log` property as a string.
 
 ## Example
@@ -44,12 +46,12 @@ AzResult = namedtuple('AzResult', ['exit_code', 'result_dict', 'log'])
 ```python
 from az.cli import az
 
-# AzResult = namedtuple('AzResult', ['exit_code', 'result_dict', 'log'])
-exit_code, result_dict, logs = az("group show -n test")
+# AzResult = namedtuple('AzResult', ['exit_code', 'output', 'log'])
+exit_code, output, logs = az("group show -n test")
 
-# On 0 (SUCCESS) print result_dict, otherwise get info from `logs`
+# On 0 (SUCCESS) print output, otherwise get info from `logs`
 if exit_code == 0:
-    print (result_dict)
+    print (output)
 else:
     print(logs)
 ```
@@ -63,14 +65,14 @@ Import the pacakge function `from az.cli import az` and run any query by execut
 # cd src
 # python3
 from az.cli import az
-# on Success, the `error_code` is 0 and the result_dict contains the output
-az("group list") # list return tuple (exit_code, result_dict, log)
+# on Success, the `error_code` is 0 and the output contains the output
+az("group list") # list return tuple (exit_code, output, log)
 az("group list")[0] # 0
-az("group list")[1] # print result_dict
+az("group list")[1] # print output
 az("group list")[1][0]['id'] # enumerate the id of the first element in dictionary
 
 # On Error, the `error_code` will be != 1 and the log is present
-az("group show -n does-not-exsist") # list return tuple (exit_code, result_dict, log)
+az("group show -n does-not-exsist") # list return tuple (exit_code, output, log)
 az("group show -n does-not-exsist")[0] # 3
 az("group show -n does-not-exsist")[2] # print the log
 ```
@@ -102,26 +104,26 @@ To demonstrate how to change the environment variable programmatically a small e
 from az.cli import az
 import os
 
-exit_code, result_dict, logs = az("group list")
-print (result_dict)
+exit_code, output, logs = az("group list")
+print (output)
 # [{'id': '/subscriptions/...', 'location': 'westeurope',  'name': 'test1']
 
 # Change the environment variable
 os.environ['AZURE_CONFIG_DIR'] = '/Users/mark/.azure_mw'
 
-exit_code, result_dict, logs = az("group list")
-print (result_dict)
+exit_code, output, logs = az("group list")
+print (output)
 # [{'id': '/subscriptions/...', 'location': 'westeurope', 'name': 'test2']
 ```
 
 ## How it works
 
-The package is an easy-to-use abstraction on top of the officiale Microsoft [Azure CLI](https://github.com/Azure/azure-cli).
+The package is an easy-to-use abstraction on top of the official Microsoft [Azure CLI](https://github.com/Azure/azure-cli).
 The official [azure.cli.core](https://github.com/Azure/azure-cli/blob/dev/src/azure-cli-core/azure/cli/core/__init__.py) library is simply wrapped in a funciton to execute Azure CLI commands using Python3.
-The package provides a funciton `az` the is based on the class `AzCLI`.
+The package provides a function `az` the is based on the class `AzCLI`.
 It exposes the function to execute `az` commands and returns the results in a structured manner.
 
-It has thus a similar API and usage to the shell version of the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest), but commands can be executed within Python, leveraging Pythons full potential. 
+It has thus a similar API and usage to the shell version of the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest), but commands can be executed within Python, leveraging Pythons full potential.
 
 ## Build
 

@@ -15,7 +15,7 @@ def main():
     show(*az("group list"))
 
 
-def show(exit_code, result_dict, log):
+def show(exit_code, output, log):
     """
     Prints a successfull command using pprint
     Prints an unsuccessfull command as a simple print
@@ -24,7 +24,7 @@ def show(exit_code, result_dict, log):
     pp = pprint.PrettyPrinter(indent=2)
 
     if exit_code == SUCCESS_CODE:
-        pp.pprint(result_dict)
+        pp.pprint(output)
     else:
         print(log)
 
